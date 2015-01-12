@@ -47,10 +47,41 @@ class TestSamview(unittest.TestCase):
         msys.stderr.write.assert_called_with(cmd + '\n')
 
     def test_samtools_returns_non0_raises_valueerror(self, mpopen, msys):
-        mpopen.return_value.poll.return_value = 1
+        mock_popen = mock.MagicMock()
+        mock_popen.poll.return_value = 1
+        mock_popen.stdout.readline.return_value = ''
+        mock_popen.stdout.__iter__.return_value = []
+
+        mpopen.return_value = mock_popen
+
         r = subsamplebam.samview('foo.bam', 'chr1:1-100')
         self.assertRaises(ValueError, next, r)
 
+    def test_only_one_line_samtools_view_no_error(self, mpopen, msys):
+        mock_popen = mock.MagicMock()
+        mock_popen.poll.return_value = 0
+        mock_popen.stdout.readline.return_value = 'line1'
+        mock_popen.stdout.__iter__.return_value = []
+
+        mpopen.return_value = mock_popen
+
+        r = subsamplebam.samview('foo.bam', 'chr1:1-100')
+        lines = list(r)
+        self.assertEqual('line1', lines[0])
+
+    def test_0_line_samtools_view_no_error(self, mpopen, msys):
+        mock_popen = mock.MagicMock()
+        mock_popen.poll.return_value = 0
+        mock_popen.stdout.readline.return_value = ''
+        mock_popen.stdout.__iter__.return_value = []
+
+        mpopen.return_value = mock_popen
+
+        r = subsamplebam.samview('foo.bam', 'chr1:1-100')
+        lines = list(r)
+        self.assertEqual([''], lines)
+
+@mock.patch('subsamplebam.multiprocessing.Pool')
 @mock.patch('subsamplebam.sys')
 @mock.patch('subsamplebam.subprocess.Popen')
 class TestMakeSubselectBam(unittest.TestCase):
@@ -64,7 +95,8 @@ class TestMakeSubselectBam(unittest.TestCase):
             '@RG ID:MiSeq    SM:foo CN:None PL:ILLUMINA',
         )
 
-    def test_contains_bam_header_and_samviewrows(self, mpopen, msys):
+    def test_contains_bam_header_and_samviewrows(self, mpopen, msys, mpool):
+        mpool.return_value.map = map
         mpopen.return_value.stdout = self.headers
         r = subsamplebam.make_subselected_bam('foo.bam', self.uniquereads)
         msys.stdout.write.assert_has_calls([
@@ -74,7 +106,7 @@ class TestMakeSubselectBam(unittest.TestCase):
             mock.call(self.uniquereads[0])
         ])
     
-    def test_uniquereads_empty_sequence(self, mpopen, msys):
+    def test_uniquereads_empty_sequence(self, mpopen, msys, mpool):
         mpopen.return_value.stdout = self.headers
         r = subsamplebam.make_subselected_bam('foo.bam', self.uniquereads)
         ecalls = []
@@ -105,8 +137,10 @@ class TestReferenceInfo(unittest.TestCase):
             seqlen = len(rec.seq)
             self.assertEqual(seqlen, r[rec.id])
 
+@mock.patch('subsamplebam.SeqIO.parse')
+@mock.patch('subsamplebam.multiprocessing.Pool')
 @mock.patch('subsamplebam.subprocess.Popen')
-class TestRandomlySelectReadsFromSamview(unittest.TestCase):
+class TestRandomlySelectsReads(unittest.TestCase):
     def setUp(self):
         self.samview_lines = (
             'read1  1  chr1    1   60  10M    =   1  1    TTTCGAATC    FFFFFFFFF    NM:i:3  AS:i:231    XS:i:0  RG:Z:MiSeq',
@@ -121,25 +155,41 @@ class TestRandomlySelectReadsFromSamview(unittest.TestCase):
             'read10  1  chr1    1   60  10M    =   1  1    TTTCGAATC    FFFFFFFFF    NM:i:3  AS:i:231    XS:i:0  RG:Z:MiSeq',
         )
 
-    def test_randomly_selects_correct_amount_of_items(self, mpopen):
+    def test_randomly_selects_correct_amount_of_items(self, mpopen, mpool, mparse):
         mpopen.return_value.poll.return_value = None
         mpopen.return_value.stdout.__iter__.return_value = self.samview_lines[1:]
         mpopen.return_value.stdout.readline.return_value = self.samview_lines[0]
-
-        r = subsamplebam.parallel_randomly_select_reads_from_samview(
-            ('foo.bam', 'chr1:1-10', 10)
-        )
-
-        self.assertEqual(set(self.samview_lines), r)
-
-    def test_handles_missing_depth_error(self, mpopen):
-        mpopen.return_value.poll.return_value = None
-        mpopen.return_value.stdout.__iter__.return_value = self.samview_lines[1:]
-        mpopen.return_value.stdout.readline.return_value = self.samview_lines[0]
+        mpool.return_value.map = map
 
         with mock.patch('subsamplebam.sys') as msys:
-            r = subsamplebam.parallel_randomly_select_reads_from_samview(
-                ('foo.bam', 'chr1:1-10', 11)
+            r = subsamplebam.subselect_from_bam(
+                'foo.bam', 10, 'chr1:1-10',
+            )
+
+            self.assertEqual(set(self.samview_lines), r)
+
+    def test_handles_missing_depth_error(self, mpopen, mpool, mparse):
+        mpopen.return_value.poll.return_value = None
+        mpopen.return_value.stdout.__iter__.return_value = self.samview_lines[1:]
+        mpopen.return_value.stdout.readline.return_value = self.samview_lines[0]
+        mpool.return_value.map = map
+
+        with mock.patch('subsamplebam.sys') as msys:
+            r = subsamplebam.subselect_from_bam(
+                'foo.bam', 11, 'chr1:1-10',
             )
             self.assertEqual(set([]), r)
-            msys.stderr.write.assert_called_with('Depth for chr1:1-10 is only 10\n')
+            for i in range(1,11):
+                msys.stderr.write.assert_has_call('Depth for chr1:{0}-{0} is only 10\n'.format(i))
+
+@mock.patch('subsamplebam.sys')
+@mock.patch('subsamplebam.argparse.ArgumentParser')
+class TestMain(unittest.TestCase):
+    def test_correct_args(self, margparser, msys):
+        args = mock.Mock()
+        margparser.return_value.parse_args.return_value = args
+        
+        args.bamfile = 'test.bam'
+        args.subsample = 10
+        args.regionstr = 'chr1:1-10'
+        subsamplebam.main()

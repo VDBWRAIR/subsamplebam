@@ -13,6 +13,7 @@ import random
 import subprocess
 import shlex
 import os.path
+import multiprocessing
 
 from Bio import SeqIO
 
@@ -21,10 +22,6 @@ def parse_args():
 
     parser.add_argument(
         'bamfile'
-    )
-
-    parser.add_argument(
-        'reffile'
     )
 
     parser.add_argument(
@@ -38,12 +35,6 @@ def parse_args():
         type=int,
         default=1000,
         help='What depth to try and subsample to'
-    )
-
-    parser.add_argument(
-        '--output',
-        default='-',
-        help='Where to store the resulting filtered bam[Default: stdout]'
     )
 
     return parser.parse_args()
@@ -84,15 +75,11 @@ def parallel_randomly_select_reads_from_samview(args):
         sys.stderr.write(str(e) + '\n')
         return set()
 
-def subselect_from_bam(bamfile, subselectdepth, reffile, regionstr):
+def subselect_from_bam(bamfile, subselectdepth, regionstr):
     '''
     Iterate over every base position in regionstr and subselect randomly from the reads
     that fall under it.
     '''
-    import multiprocessing
-
-    # Get names and lengths of reference
-    refinfo = reference_info(reffile)
     # Parse the regionstring
     refname, startstop = regionstr.split(':')
     start, stop = startstop.split('-')
@@ -100,12 +87,11 @@ def subselect_from_bam(bamfile, subselectdepth, reffile, regionstr):
     rstrings = []
     for i in range(int(start), int(stop)+1):
         rstring = '{0}:{1}-{1}'.format(refname, i, i)
-        #selected = randomly_select_reads_from_samview(bamfile, rstring, subselectdepth)
-        #uniquereads.update(selected)
         rstrings.append((bamfile, rstring, subselectdepth))
 
     pool = multiprocessing.Pool()
     ureads = pool.map(parallel_randomly_select_reads_from_samview, rstrings)
+    #ureads = map(parallel_randomly_select_reads_from_samview, rstrings)
     for uread in ureads:
         uniquereads.update(uread)
 
@@ -141,8 +127,8 @@ def samview(bamfile, regionstr):
     )
     # you have to read stdout in order for return to fill in
     firstline = p.stdout.readline()
-    if p.poll() != None:
-        raise ValueError('bamfile or regionstring incorrect')
+    if p.poll() not in (0,None) and firstline == '':
+        raise ValueError('samtools did not return correctly')
     yield firstline
     for line in p.stdout:
         yield line
@@ -166,8 +152,5 @@ def main():
         sys.stderr.write('Samtools is not installed or executable\n')
         sys.exit(1)
     args = parse_args()
-    uniquereads = subselect_from_bam(args.bamfile, args.subsample, args.reffile, args.regionstr)
-    make_subselected_bam(args.bamfile, uniquereads, args.output) 
-
-if __name__ == '__main__':
-    main()
+    uniquereads = subselect_from_bam(args.bamfile, args.subsample, args.regionstr)
+    make_subselected_bam(args.bamfile, uniquereads) 
