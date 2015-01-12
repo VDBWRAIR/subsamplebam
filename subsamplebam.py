@@ -12,7 +12,6 @@ import argparse
 import random
 import subprocess
 import shlex
-import contextlib
 import os.path
 
 from Bio import SeqIO
@@ -51,7 +50,7 @@ def parse_args():
 
 class MinimumDepthNotAvailable(Exception): pass
 
-def randomly_select_read_from_samview(bamfile, regionstr, n):
+def randomly_select_reads_from_samview(bamfile, regionstr, n):
     '''
     Given a samview output select n random read names
     In place operation on selection
@@ -61,34 +60,28 @@ def randomly_select_read_from_samview(bamfile, regionstr, n):
     :param int n: Random subselection depth, aka, how many random rows to select from samview
     '''
     newselection = None
-    with samview(bamfile, regionstr) as sview:
-        sview = list(sview)
-        try:
-            newselection = set(random.sample(sview, n))
-        except ValueError as e:
-            raise MinimumDepthNotAvailable('Depth for {0} is only {1}'.format(regionstr, len(sview)))
-            #raise MinimumDepthNotAvailable('{0} for {1}\n'.format(str(e), regionstr))
+    sview = samview(bamfile, regionstr)
+    sview = list(sview)
+    try:
+        newselection = set(random.sample(sview, n))
+    except ValueError as e:
+        raise MinimumDepthNotAvailable('Depth for {0} is only {1}'.format(regionstr, len(sview)))
     return newselection
 
 def reference_info(reffile):
     '''
-    Return information about references in file
-    {'ref1name': ref1len, ...}
-
-    >>> i = reference_info('Den1__Cambodia__2009.fasta')
-    >>> print i['Den1/GU131895_1/Cambodia/2009/Den1_1']
-    10474
+    Hash reference id's with their lengths
     '''
     refinfo = {}
     for rec in SeqIO.parse(reffile, 'fasta'):
         refinfo[rec.id] = len(str(rec.seq))
     return refinfo
 
-def parallel_randomly_select_read_from_samview(args):
+def parallel_randomly_select_reads_from_samview(args):
     try:
-        return randomly_select_read_from_samview(*args)
+        return randomly_select_reads_from_samview(*args)
     except MinimumDepthNotAvailable as e:
-        sys.stderr.write(e + '\n')
+        sys.stderr.write(str(e) + '\n')
         return set()
 
 def subselect_from_bam(bamfile, subselectdepth, reffile, regionstr):
@@ -107,23 +100,21 @@ def subselect_from_bam(bamfile, subselectdepth, reffile, regionstr):
     rstrings = []
     for i in range(int(start), int(stop)+1):
         rstring = '{0}:{1}-{1}'.format(refname, i, i)
-        #selected = randomly_select_read_from_samview(bamfile, rstring, subselectdepth)
+        #selected = randomly_select_reads_from_samview(bamfile, rstring, subselectdepth)
         #uniquereads.update(selected)
         rstrings.append((bamfile, rstring, subselectdepth))
 
     pool = multiprocessing.Pool()
-    ureads = pool.map(parallel_randomly_select_read_from_samview, rstrings)
+    ureads = pool.map(parallel_randomly_select_reads_from_samview, rstrings)
     for uread in ureads:
         uniquereads.update(uread)
 
     return uniquereads
 
-def make_subselected_bam(bamfile, uniquereads, outbam):
+def make_subselected_bam(bamfile, uniquereads):
     '''
     Make outbam with uniquereads
     '''
-    name, ext = os.path.splitext(outbam)
-
     # Write header of bamfile
     cmd = 'samtools view -H {0}'.format(bamfile)
     sys.stderr.write(cmd + '\n')
@@ -138,7 +129,6 @@ def make_subselected_bam(bamfile, uniquereads, outbam):
     for line in uniquereads:
         sys.stdout.write(line)
 
-@contextlib.contextmanager
 def samview(bamfile, regionstr):
     '''
     Just return iterator over samtools view bamfile regionstr
@@ -149,7 +139,13 @@ def samview(bamfile, regionstr):
         shlex.split(cmd),
         stdout=subprocess.PIPE
     )
-    yield p.stdout
+    # you have to read stdout in order for return to fill in
+    firstline = p.stdout.readline()
+    if p.poll() != None:
+        raise ValueError('bamfile or regionstring incorrect')
+    yield firstline
+    for line in p.stdout:
+        yield line
 
 def samtools_is_available():
     try:
