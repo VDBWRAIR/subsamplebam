@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # Handle SIGPIPE signals correctly
 from signal import signal, SIGPIPE, SIG_DFL
@@ -140,8 +141,13 @@ def samtools_is_available():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
-        sout,_ = p.communicate()
-        if 'Version' in sout:
+        sout, _ = p.communicate()
+        findme = None
+        if isinstance(sout, bytes):
+            findme = b'Version:'
+        else:
+            findme = 'Version:'
+        if sout.find(findme) >= 0:
             return True
         return False
     except OSError as e:
