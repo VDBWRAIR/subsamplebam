@@ -1,6 +1,7 @@
-from nose.plugins.attrib import attr
-
+from os.path import *
 from io import StringIO
+
+from nose.plugins.attrib import attr
 
 from compat import (
     unittest,
@@ -8,6 +9,8 @@ from compat import (
 )
 
 import subsamplebam
+
+THISD = dirname(abspath(__file__))
 
 @mock.patch('subsamplebam.sys')
 @mock.patch('subsamplebam.subprocess.Popen')
@@ -189,7 +192,7 @@ class TestMain(unittest.TestCase):
         args = mock.Mock()
         margparser.return_value.parse_args.return_value = args
         
-        args.bamfile = 'test.bam'
+        args.bamfile = join(THISD, 'test.bam')
         args.subsample = 10
         args.regionstr = 'chr1:1-10'
         subsamplebam.main()
