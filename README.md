@@ -52,7 +52,7 @@ You can see that the peaks still exist, but you end up with a much more uniform 
 ## Understanding the output
 
 subsamplebam outputs to both stderr and stdout.
-The output to stderr will be the currect samtools region it is working on as well as sometimes you may see a line about Depth being only a certain amount.
+The output to stderr will be the correct samtools region it is working on as well as sometimes you may see a line about Depth being only a certain amount.
 
 Example output:
 
@@ -83,7 +83,7 @@ This will only work for your current terminal session unless you modify your PAT
 
 Currently the way reads are selected means that even though you only specify say ``--subsample 10``, you might end up with a great many reads covering a given area.
 You can see this in the examples above that even though ``--subsample 10`` was used, the coverage was well over 1500 for most of the genome. This is because when random reads are selected,
-they may cover many base positions. So if your average read depth is 150 and you are subselecting at 10 depth, the first base will contain 10 depth, but position 2 will contain those 10 reads, plus potentially 10 more reads. Then the 3rd position will
+they may cover many base positions. So if your average read depth is 150 and you are sub selecting at 10 depth, the first base will contain 10 depth, but position 2 will contain those 10 reads, plus potentially 10 more reads. Then the 3rd position will
 contain 10+10+10, and so on.
 
 ## TODO
