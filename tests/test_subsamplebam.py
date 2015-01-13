@@ -185,10 +185,12 @@ class TestRandomlySelectsReads(unittest.TestCase):
             for i in range(1,11):
                 msys.stderr.write.assert_has_call('Depth for chr1:{0}-{0} is only 10\n'.format(i))
 
+@mock.patch('subsamplebam.multiprocessing.Pool')
 @mock.patch('subsamplebam.sys')
 @mock.patch('subsamplebam.argparse.ArgumentParser')
 class TestMain(unittest.TestCase):
-    def test_correct_args(self, margparser, msys):
+    def test_correct_args(self, margparser, msys, mpool):
+        mpool.return_value.map = map
         args = mock.Mock()
         margparser.return_value.parse_args.return_value = args
         
