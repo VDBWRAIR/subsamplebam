@@ -8,21 +8,31 @@ Hopefully will allow you to randomly subsample a bam to get closer to even depth
 
 Here are some quick comparisons:
 
-## The original sample looks like this
+## Original Sample
+
+Here you can see that the read depth can vary drastically which may not be desired.
+There are some pretty massive peaks of coverage which drop off terribly.
 
 ![original](/images/original.png)
 
 ## Using samtools to get a subsample
 
-Here we have a bam file called 8457 which has over 5 million reads in it. I picked 1.02 to try and get about 100k of those reads 
+Here we have a bam file called 8457 which has over 5 million reads in it. I picked 1.02 to try and get about 100k of those reads and see
+what the coverage looks like after.
 
 ```
 $> samtools view -hb -s 1.02 8457.bam > smaller.bam; samtools index smaller.bam
 ```
 
+Here you can see that the peaks are not as drastic, but we also end up losing those low coverage regions as they get subsampled as well. Essentially, you just have
+the same issue on a smaller scale.
+
 ![samtools](/images/samtools.png)
 
-## Using subsamplebam.py
+## Using subsamplebam
+
+With subsamplebam you can specify your ``--subsample`` wanted depth and it will grab that many random reads from each position on the genome which creates a more
+uniform coverage.
 
 ```
 $> samtools view -H 8457.bam
@@ -34,6 +44,8 @@ $> samtools view -H 8457.bam
 @RG ID:Sanger   SM:8457 CN:None PL:CAPILLARY
 $> subsamplebam 8457.bam Den1/GU131895_1/Cambodia/2009/Den1_1:1-10747 --subsample 10 | samtools view -hSb - | samtools sort - subsampled; samtools index subsampled.bam;
 ```
+
+You can see that the peaks still exist, but you end up with a much more uniform depth across than just doing random sampling with samtools.
 
 ![subsamplebam](/images/subsamplebam.png)
 
