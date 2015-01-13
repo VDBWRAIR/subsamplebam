@@ -198,3 +198,17 @@ class TestMain(unittest.TestCase):
         args.subsample = 10
         args.regionstr = 'chr1:1-10'
         subsamplebam.main()
+
+    def test_missing_samtools(self, margparser, msys, mpool):
+        mpool.return_value.map = map
+        args = mock.Mock()
+        margparser.return_value.parse_args.return_value = args
+
+        args.bamfile = 'foo.bam'
+        args.subsample = 10
+        args.regionstr = 'chr1:1-10'
+
+        with mock.patch('subsamplebam.samtools_is_available') as mocky:
+            mocky.return_value = False
+            msys.exit.side_effect = SystemExit
+            self.assertRaises(SystemExit, subsamplebam.main)
