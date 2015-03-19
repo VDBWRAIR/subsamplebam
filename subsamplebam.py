@@ -15,6 +15,8 @@ import subprocess
 import shlex
 import os.path
 import multiprocessing
+import numpy as np
+
 
 from Bio import SeqIO
 
@@ -115,6 +117,12 @@ def make_subselected_bam(bamfile, uniquereads):
         sys.stdout.write(line)
     for line in uniquereads:
         sys.stdout.write(line)
+
+
+def reads_by_pos(reads, max_pos):
+       #def is_at_pos(pos): return read['pos'] == pos
+    for pos in xrange(max_pos):
+        yield [read for read in reads if read['pos'] == pos]
 
 def samview(bamfile, regionstr):
     '''
