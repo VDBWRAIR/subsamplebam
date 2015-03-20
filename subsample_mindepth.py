@@ -1,7 +1,8 @@
 from __future__ import print_function
 import sys
-import pandas as pd 
+#import pandas as pd 
 import numpy as np
+import subsamplebam
 
 ''' bugs '''
 
@@ -12,7 +13,8 @@ def get_raw_reads(bamfile, refseq=None, idx=None):
  #     region_str = "{0}:{1}-{1}".format(refseq, idx)
  #     res = !samtools view $bamfile "$region_str"
  #  return res
-   pass
+ return list(subsamplebam.samview(bamfile, ''))
+ #pass
 
 def add_arrays(a, b, add_idx):
    bigger, smaller = max(a, b, key=len), min(a, b, key=len)
@@ -42,12 +44,7 @@ def parse_alignment(raw_view):
    #return dict(zip(['qname', 'pos', 'seq'], [fields[0], int(fields[3]), fields[9]]))
 
 
-def get_depths(reads): 
-   #def seq_len(alignment): return len(alignment['seq'])
-   #return [len(filter(lambda x: seq_len(x) > i, reads)) for i in xrange(max(map(seq_len, reads))) ]
-   #return [len(filter(lambda seq: seq.seq_length > i, reads)) for i in xrange(max([seq.seq_length for seq in reads])) ]
-   #return [len(seq) for i in xrange(max([seq.seq_length for seq in reads])) ]
-   return [len(filter(lambda x: x.seq_length > i, reads)) for i in xrange(max([s.seq_length for s in reads])) ]
+
 
 def add_lists():
    for j, depth in enumerate(current_depths[i:]): next_depths_array[j] += depth
@@ -72,8 +69,12 @@ class DepthMatrix(object):
         self.min_depth = min_depth
 
     def get_candidate_sequences(self, under_index):
-        #have this only look backwards until reach  under-covered index
-        return [filter(lambda seq: seq.overlap  >= under_index and not seq.picked, seqs) for seqs in self.seq_matrix[:under_index+1] ]  [0] #?
+        #have this only look backwards until reach  under-covered index 
+        sub_matrix = self.seq_matrix[:under_index+1]
+        #flatten the list
+        prev_seqs = [seq for row in sub_matrix for seq in row]
+        #return [filter(lambda seq: seq.overlap  >= under_index and not seq.picked, seqs) for seqs in self.seq_matrix[:under_index+1] ]
+        return filter(lambda seq: seq.overlap  >= under_index and not seq.picked, prev_seqs)
     
     def yield_greatest_overlaps(self, under_index, num_needed):
         candidate_sequences = self.get_candidate_sequences(under_index) 
@@ -91,13 +92,33 @@ class DepthMatrix(object):
         next_sequences = list(self.yield_greatest_overlaps(pos, needed_depth))
         if not next_sequences:  # no matches found
             return False
-        next_depths = np.array(get_depths(next_sequences))
-        #self.depth_array[pos:pos+len(next_depths)] += next_depths[:ref_length-pos]]
-        self.depth_array[pos:pos+len(next_depths)] += next_depths
+        ''' This doesn't work because it returns a flat list of depths starting at index 0, where in reality these reads
+        Can start at different positions behind the current position.'''
+        min_pos = min(seq.pos for seq in next_sequences)
+        next_depths = self.get_depths(next_sequences, min_pos)
+        #self.depth_array[pos:pos+len(next_depths)] += next_depths[:len(self.depth_array)-pos]
+        self.depth_array += next_depths
         print("depth {0} at pos {1}".format(str(len(next_sequences)), str(pos)))
         if  len(next_sequences) > needed_depth:
             raise Exception("Too many sequences retured")
         return len(next_sequences) == needed_depth
+    ''' 
+    Needlessly creates a depth_array of equal size to self.depth_array 
+    '''
+    def get_depths(self, reads, min_pos): 
+       #def seq_len(alignment): return len(alignment['seq'])
+       #return [len(filter(lambda x: seq_len(x) > i, reads)) for i in xrange(max(map(seq_len, reads))) ]
+       #return [len(filter(lambda seq: seq.seq_length > i, reads)) for i in xrange(max([seq.seq_length for seq in reads])) ]
+       #return [len(seq) for i in xrange(max([seq.seq_length for seq in reads])) ]
+       #return [len(filter(lambda x: x.seq_length > i, reads)) for i in xrange(max([s.seq_length for s in reads])) ] 
+       depths = np.zeros(len(self.depth_array))
+       for seq in reads: 
+           ''' Even if a sequence would overlap past the length of depth-array, we don't include that in depth-array. 
+           the numpy arrays must be the same size in order to add them.
+           '''
+           i, j = seq.pos, min(len(depths), seq.overlap +1)
+           depths[i:j] += np.array([1 for overlap in xrange(i, j)])
+       return depths
 
     def print_matrix(self):
         for row in self.seq_matrix:
@@ -107,16 +128,19 @@ class DepthMatrix(object):
         all_alignments = map(parse_alignment, get_raw_reads(bamfile))
         max_pos = max([seq.pos for seq in all_alignments])#max(all_alignments, key=lambda seq: seq.pos)
         #initialize sequence matrix as a 2D array
-        #self.seq_matrix = [ filter( lambda seq: seq.pos == i) for i in xrange(max_pos)]
+        # weird thing about pos 0 
+        seq_matrix = [ filter( lambda seq: seq.pos == i, all_alignments) for i in xrange(1, max_pos)]
+        self.seq_matrix = seq_matrix
         ''' does htis work lol?'''
-        self.seq_matrix = [ [seq for seq in all_alignments] for i in xrange(max_pos) if seq.pos == i]
+        return
+        #self.seq_matrix = [ [seq for seq in all_alignments] for i in xrange(max_pos) if seq.pos == i]
         #self.print_matrix()
 
 # need to handle case where fasta file does not span entire reference genome;
 # depth array should be limited in that case to the largest overlap
     def main(self):
         for pos, depth in enumerate(self.depth_array):
-            print( self.depth_array )
+            #print( self.depth_array )
             if depth < self.min_depth:
                 needed_depth = self.min_depth - depth
                 depth_met = self.backtrack(pos, needed_depth)
@@ -125,20 +149,23 @@ class DepthMatrix(object):
 
 def get_ref_length( bamfile):
    #ref_len_str = !samtools view -c $bamfile
-   return int(ref_len_str[0])
+   #return int(ref_len_str[0])
+   return 1000
 
 
 def main():
     try: 
         bamfile, min_depth = sys.argv[1], int(sys.argv[2])
     except IndexError:
-        bamfile, min_depth =  '~/projects/samtools_primer/tutorial/alignments/sim_reads_aligned.sorted.bam', 80
+        bamfile, min_depth =  '/Users/wovenhead/clones/samtools_primer/tutorial/alignments/sim_reads_aligned.sorted.bam', 58
+        bamfile = '/Users/wovenhead/clones/ngs_mapper/tdir/780/780.bam'
     print("bamfile: {0}, min_depth: {1}".format(bamfile, min_depth))
     ref_length = get_ref_length(bamfile)
     matrix = DepthMatrix(ref_length, min_depth) 
     matrix.make_seq_matrix(bamfile)
     matrix.main()
     print(matrix.depth_array)
+    return matrix.depth_array
 
 class Alignment(object):
 

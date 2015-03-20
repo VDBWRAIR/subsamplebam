@@ -1,5 +1,19 @@
+Current solution is in subsample_mindepth.py. Currently outputs a raw list of depths as integers. <br>
+plot_depths can plot these using ngs_mapper's graph_qualdepth's methods. <br>
 
-#Current Broken
+
+from within ipython:<br>
+[XX]: result = subsample_mindepth.main(); plot_depths.simple_plot_depths(result)
+<br>
+
+
+# TODO
+
+* Test with (mock) data which gaurantees overflow: overflow should still show
+* Integrate with pipeline (fix output), store and index(store as array) the reads so that they (the original samtools view output) can be retreived from the DepthMatrix.seq_matrix once all the reads are picked
+* Integrate with the existing test framework (learn mocking)
+* Test with real data and confer with biologists to ensure accuracy
+* Refactor implementation to allow multi-processing solution (may involve a "mop-up" method to run after re-uniting the subsampled reads)
 
 # subsamplebam
 
@@ -85,6 +99,3 @@ You can see this in the examples above that even though ``--subsample 10`` was u
 they may cover many base positions. So if your average read depth is 150 and you are sub selecting at 10 depth, the first base will contain 10 depth, but position 2 will contain those 10 reads, plus potentially 10 more reads. Then the 3rd position will
 contain 10+10+10, and so on.
 
-## TODO
-
-* Fix the issue noted above
