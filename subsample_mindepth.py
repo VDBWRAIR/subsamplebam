@@ -39,17 +39,24 @@ class DepthMatrix(object):
         self.min_depth = min_depth 
         self.allow_orphans = allow_orphans
 
+
+    def allow(self, seq):
+        if self.allow_orphans:
+            return True
+        else:
+            return not seq.orphan
+
     '''
     Candidates have not been used already, overlap the current index, and are not "orphan" or "anomalous" reads.
     orphaned/anomalous reads don't get spotted by default mpileup command. see https://github.com/VDBWRAIR/ngs_mapper/issues/112
     '''
     def get_candidate_sequences(self, under_index):
         #TODO: have this only look backwards until reach under-covered index 
-        start = min(under_index - self.max_seq_length, 0)
+        start = max(under_index - self.max_seq_length, 0)
         sub_matrix = self.seq_matrix[start:under_index+1]
         '''flatten the matrix'''
         prev_seqs = [seq for row in sub_matrix for seq in row]
-        return filter(lambda seq: seq.overlap  >= under_index and not seq.picked and not (seq.orphan and not self.allow_orphans), prev_seqs)
+        return filter(lambda seq: seq.overlap  >= under_index  and self.allow(seq) and not seq.picked, prev_seqs)
     '''
     @side-effect: sequences are set to "picked" when they are yielded by this function.
     @param under_index: the position on the reference that is under minimum depth.
@@ -192,7 +199,7 @@ def main():
             bamfile, min_depth = args[0], int(args[1])
         else:
             allow_orphans = False
-            #bamfile, min_depth = sys.argv[1], int(sys.argv[2])
+            bamfile, min_depth = sys.argv[1], int(sys.argv[2])
     except IndexError:
         raise IndexError("Not enough arguments")
     sys.stderr.write("bamfile: {0}, min_depth: {1}\n".format(bamfile, min_depth))
