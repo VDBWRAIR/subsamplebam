@@ -23,8 +23,9 @@ Unfortunately this doesn't work because you can be under the target depth at a p
 
 def parse_alignment(raw_view):
    fields = raw_view.split()
+   flag = int(fields[1])
    qname, pos, seq = fields[0], int(fields[3]), fields[9]
-   return Alignment(raw_view, qname, pos, seq)
+   return Alignment(raw_view, qname, pos, seq, flag)
 
 def add_lists():
    for j, depth in enumerate(current_depths[i:]): next_depths_array[j] += depth
@@ -42,12 +43,17 @@ class DepthMatrix(object):
         self.depth_array = np.zeros(ref_length)
         self.min_depth = min_depth
 
+
+    '''
+    Candidates have not been used already, overlap the current index, and are not "orphan" or "anomalous" reads.
+    orphaned/anomalous reads don't get spotted by default mpileup command. see https://github.com/VDBWRAIR/ngs_mapper/issues/112
+    '''
     def get_candidate_sequences(self, under_index):
         #have this only look backwards until reach  under-covered index 
         sub_matrix = self.seq_matrix[:under_index+1]
         #flatten the list
         prev_seqs = [seq for row in sub_matrix for seq in row]
-        return filter(lambda seq: seq.overlap  >= under_index and not seq.picked, prev_seqs)
+        return filter(lambda seq: seq.overlap  >= under_index and not seq.picked and not seq.orphan, prev_seqs)
     
     def yield_greatest_overlaps(self, under_index, num_needed):
         candidate_sequences = self.get_candidate_sequences(under_index) 
@@ -117,10 +123,16 @@ class DepthMatrix(object):
 
 class Alignment(object):
 
-    def __init__(self, string, qname, pos, seq):
+    def __init__(self, string, qname, pos, seq, flag):
         self.qname, self.pos, self.seq = qname, pos, seq
         self.picked = False
         self.string = string
+        self.orphan = self.is_orphan(flag)
+
+
+
+    def is_orphan(self, flag): 
+        return not flag & 0x2
 
     @property
     def seq_length(self):
@@ -165,7 +177,7 @@ def main():
     matrix.main()
     sampled_seqs = [seq.string for row in matrix.seq_matrix for seq in row if seq.picked]
     subsamplebam.make_subselected_bam(bamfile, sampled_seqs) 
-    import ipdb; ipdb.set_trace()
+    #import ipdb; ipdb.set_trace()
     return matrix.depth_array
 
 if __name__ == "__main__":
