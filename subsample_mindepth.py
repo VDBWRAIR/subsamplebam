@@ -108,14 +108,12 @@ class DepthMatrix(object):
 # need to handle case where fasta file does not span entire reference genome;
 # depth array should be limited in that case to the largest overlap
     def main(self):
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         for pos, depth in enumerate(self.depth_array):
             if depth < self.min_depth:
                 needed_depth = self.min_depth - depth
                 depth_met = self.backtrack(pos, needed_depth)
                 #sys.stderr.write("depth was {0}met.\n".format("" if depth_met else "NOT "))
-
-# !!!
 
 class Alignment(object):
 
@@ -134,6 +132,8 @@ class Alignment(object):
 
     def pick(self):
         self.picked = True
+    def __str__(self):
+        return "pos: {0}, overlap {1} \n seq {2} \n {3}".format(self.pos, self.overlap, self.seq, self.string)
 
 def get_num_alignments( bamfile):
    #ref_len_str = !samtools view -c $bamfile
@@ -165,6 +165,7 @@ def main():
     matrix.main()
     sampled_seqs = [seq.string for row in matrix.seq_matrix for seq in row if seq.picked]
     subsamplebam.make_subselected_bam(bamfile, sampled_seqs) 
+    import ipdb; ipdb.set_trace()
     return matrix.depth_array
 
 if __name__ == "__main__":

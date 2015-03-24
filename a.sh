@@ -2,7 +2,7 @@ ngs="/home/AMED/michael.panciera/projects/ngs_mapper/ngs_mapper"
 bamfile="../780/780.bam"
 refid=`samtools view -H ../780/780.bam | grep @SQ | head -1 | grep -oP "SN:\K([^\t]+)"`
 seqlength=`samtools view -H ../780/780.bam | grep @SQ | head -1 | grep -oP "LN:\K([0-9]+)"`
-tmp="780.subsampled"
+tmp="random/780.subsampled"
 
 echo ${refid}:1-${seqlength} Trying
 
