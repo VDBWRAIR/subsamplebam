@@ -103,3 +103,12 @@ def get_bam_depths(bamfile, ref=None, start=None, end=None):
           #raise Exception
           running_depths[pos:pos+len(next_depths)] += next_depths[:ref_length-pos]
    return running_depths
+
+
+def get_raw_reads(bamfile, refseq=None, idx=None):
+ #  if not (refseq or idx):
+ #      res = !samtools view $bamfile
+ #  else:
+ #     region_str = "{0}:{1}-{1}".format(refseq, idx)
+ #     res = !samtools view $bamfile "$region_str"
+ #  return res

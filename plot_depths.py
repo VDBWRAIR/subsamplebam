@@ -3,7 +3,7 @@
 run graph_qualdepth f -o subsampled.png
 '''
 import sys
-sys.path.append('/Users/wovenhead/clones/ngs_mapper/ngs_mapper/')
+sys.path.append('/home/AMED/michael.panciera/projects/ngs_mapper/ngs_mapper/')
 import graph_qualdepth
 
 import matplotlib.pyplot as plt
@@ -24,6 +24,9 @@ def simple_plot_depths(depths_array):
     ax = plt.subplot(gs[0]) 
     graph_qualdepth.plot_depths(ax, xvals, depths_array,
             maxdepth, color, title)
+
+    outputfile = 'foo.png'
+    fig.savefig( outputfile, bbox_inches='tight', dpi=100, pad_inches=0.1 )
     fig.show()
 
 
