@@ -11,7 +11,7 @@ import re
 '''
 
 '''
-@param bamfile input file
+@param bamfile: input file
 @param regionstr: the seq id to select, followed by the region to look up, seperated by colon. i.e.:
 <refid>:1-1000
 @return a list of sequences from the output of `samtools view` 
@@ -44,8 +44,9 @@ class DepthMatrix(object):
     orphaned/anomalous reads don't get spotted by default mpileup command. see https://github.com/VDBWRAIR/ngs_mapper/issues/112
     '''
     def get_candidate_sequences(self, under_index):
-        #TODO: have this only look backwards until reach  under-covered index 
-        sub_matrix = self.seq_matrix[:under_index+1]
+        #TODO: have this only look backwards until reach under-covered index 
+        start = min(under_index - self.max_seq_length, 0)
+        sub_matrix = self.seq_matrix[start:under_index+1]
         '''flatten the matrix'''
         prev_seqs = [seq for row in sub_matrix for seq in row]
         return filter(lambda seq: seq.overlap  >= under_index and not seq.picked and not (seq.orphan and not self.allow_orphans), prev_seqs)
@@ -112,6 +113,7 @@ class DepthMatrix(object):
         max_pos = max([seq.pos for seq in all_alignments])
         '''initialize sequence matrix as a 2D array in order of position.'''
         self.seq_matrix = [ [seq for seq in all_alignments if seq.pos == i] for i in xrange(max_pos)]
+        self.max_seq_length = max([seq.seq_length for seq in all_alignments])
 
     ''' 
     Trim self.seq_matrix to minimize coverage overflow.
