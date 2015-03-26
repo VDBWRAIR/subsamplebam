@@ -53,8 +53,7 @@ docs/_build/
 # PyBuilder
 target/
 
-#
+# Mike's
 *.bak
 *.pyc
 *~
-
