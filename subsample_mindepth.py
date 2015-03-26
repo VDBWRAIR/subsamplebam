@@ -185,14 +185,14 @@ def main():
     '''
     #TODO: need to handle case where fasta file does not span entire reference genome; depth array should be limited in that case to the largest overlap
     args = subsamplebam.parse_args(wrapper=False)
-    sys.stderr.write(str(args)) 
+    sys.stderr.write(str(args)+'\n') 
 #    ref_length = int(args.regionstr.split(':')[-1].split('-')[-1])
 #    region_str = args.regionstr.split(':')[0]
     matrix = DepthMatrix(args.reflength, args.subsample, allow_orphans=args.count_orphans) 
     matrix.make_seq_matrix(args.bamfile, args.refseq)
     matrix.minimize_depths()
     ''' Flatten the matrix '''
-    sampled_seqs = flatten_and_filter_matrix(self.seq_matrix)
+    sampled_seqs = flatten_and_filter_matrix(matrix.seq_matrix)
     '''Print results to stdout as a sam view (.sam file)'''
     subsamplebam.make_subselected_bam(args.bamfile, sampled_seqs) 
 

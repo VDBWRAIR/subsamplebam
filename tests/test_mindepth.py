@@ -10,6 +10,13 @@ import numpy as np
 sys.path.append('..'); import subsample_mindepth as sub
 from subsample_mindepth import Alignment, DepthMatrix
 from numpy.ma.testutils import assert_equal
+from argparse import Namespace
+from StringIO import StringIO
+
+
+def mock_args(wrapper=False): 
+        return Namespace(reflength=1000, subsample=40, count_orphans=True, bamfile='ecoli.bam', refseq="gi|110640213|ref|NC_008253.1|")
+
 
 def mock_get_raw_reads( bamfile, regionstr=''):
      return ''' gi|110640213|ref|NC_008253.1|_2_451_1:0:0_1:0:0_12b/1	0	gi|110640213|ref|NC_008253.1|	0	42	70M	*	0	0	GCT 222 AS:i:-3	XN:i:0	XM:i:1	XO:i:0	XG:i:0	NM:i:1	MD:Z:45A24	YT:Z:UU
@@ -121,10 +128,17 @@ class SimpleTest(unittest.TestCase):
         assert_equal(expected_depths, self.matrix.depth_array)
         self.assertEquals([seq.string for seq in expected_list], sub.flatten_and_filter_matrix(self.matrix.seq_matrix)) 
 
-    def test_main(self):
-        from argparse import Namespace
-        return Namespace()
-        pass
+
+
+
+    @mock.patch("subsamplebam.parse_args", side_effect=mock_args)
+    @mock.patch('subsamplebam.sys.stdout', new_callable=StringIO)
+    def test_main(self, mock_stdout, func):
+        sub.main() 
+        expected = open('test40.sam', 'r').read().strip()
+        result = mock_stdout.getvalue().strip()
+        
+        self.assertEquals(expected, result)
 
 
 
