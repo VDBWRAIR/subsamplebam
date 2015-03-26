@@ -20,18 +20,25 @@ import numpy as np
 
 from Bio import SeqIO
 
-def parse_args():
+def parse_args(wrapper=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
         'bamfile'
     )
 
-    parser.add_argument(
-        'regionstr',
-        default=None,
-        help='Region string to do subsampleing on ref with'
-    )
+    if not wrapper: 
+        parser.add_argument(
+            'refseq',
+            default=None,
+            help='name of the reference sequenceto do subsampleing on '
+        )
+        parser.add_argument(
+            'reflength',
+            default=None,
+            type=int,
+            help='Length of the reference sequence'
+        )
 
     parser.add_argument(
         '--subsample',
@@ -39,6 +46,14 @@ def parse_args():
         default=1000,
         help='What depth to try and subsample to'
     )
+
+    parser.add_argument(
+            '-A', '--count-orphans',
+            action='store_true',
+            help='Allow orphan/unpaired reads.'
+            )
+            
+
 
     return parser.parse_args()
 
