@@ -45,7 +45,7 @@ class SimpleTest(unittest.TestCase):
         #self.raw_reads = self.mock_get_raw_reads("", "")
         self.reads = short_mock_get_alignments('', '')
         self.raw_reads = mock_get_raw_reads('', '')
-        self.matrix = DepthMatrix(1000, 3, allow_orphans=True) 
+        self.matrix = DepthMatrix(3, allow_orphans=True) 
         self.matrix.make_seq_matrix("", "")
 
     @mock.patch("subsample_mindepth.get_raw_reads", side_effect=mock_get_raw_reads)

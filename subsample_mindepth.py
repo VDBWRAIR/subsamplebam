@@ -44,9 +44,9 @@ class DepthMatrix(CommonEqualityMixin):
     Keep track of the picked alignments (seq_matrix) and .depth_array, representing the coverage at each sequence position.
     '''
 
-    def __init__(self, ref_length, min_depth, allow_orphans=False):
+    def __init__(self, min_depth, allow_orphans=False):
         self.seq_matrix = [[]]
-        self.depth_array = np.zeros(ref_length)
+        #self.depth_array = np.zeros(ref_length)
         self.min_depth = min_depth 
         self.allow_orphans = allow_orphans
 
@@ -130,6 +130,8 @@ class DepthMatrix(CommonEqualityMixin):
         #import ipdb; ipdb.set_trace()
         all_alignments = get_alignments(bamfile, regionstr)
         max_pos = max([seq.pos for seq in all_alignments])
+        max_overlap = max([seq.overlap for seq in all_alignments])
+        self.depth_array = np.zeros(max_overlap)
         '''initialize sequence matrix as a 2D array in order of position.'''
         self.seq_matrix = [ [seq for seq in all_alignments if seq.pos == i] for i in xrange(max_pos+1)]
         self.max_seq_length = max([seq.seq_length for seq in all_alignments])
@@ -188,7 +190,7 @@ def main():
     sys.stderr.write(str(args)+'\n') 
 #    ref_length = int(args.regionstr.split(':')[-1].split('-')[-1])
 #    region_str = args.regionstr.split(':')[0]
-    matrix = DepthMatrix(args.reflength, args.subsample, allow_orphans=args.count_orphans) 
+    matrix = DepthMatrix(args.subsample, allow_orphans=args.count_orphans) 
     matrix.make_seq_matrix(args.bamfile, args.refseq)
     matrix.minimize_depths()
     ''' Flatten the matrix '''

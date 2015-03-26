@@ -33,12 +33,13 @@ def parse_args(wrapper=False):
             default=None,
             help='name of the reference sequenceto do subsampleing on '
         )
-        parser.add_argument(
-            'reflength',
-            default=None,
-            type=int,
-            help='Length of the reference sequence'
-        )
+        ''' reference lenght isn't necessary to use samtools view '''
+#        parser.add_argument(
+#            'reflength',
+#            default=None,
+#            type=int,
+#            help='Length of the reference sequence'
+#        )
 
     parser.add_argument(
         '--subsample',
