@@ -12,10 +12,12 @@ from subsample_mindepth import Alignment, DepthMatrix
 from numpy.ma.testutils import assert_equal
 from argparse import Namespace
 from StringIO import StringIO
-
+import os.path
+THISD = os.path.dirname(os.path.abspath(__file__))
 
 def mock_args(wrapper=False): 
-        return Namespace(reflength=1000, subsample=40, count_orphans=True, bamfile='ecoli.bam', refseq="gi|110640213|ref|NC_008253.1|")
+        bamfile = os.path.join(THISD, 'ecoli.bam')
+        return Namespace(reflength=1000, subsample=40, count_orphans=True, bamfile=bamfile, refseq="gi|110640213|ref|NC_008253.1|")
 
 
 def mock_get_raw_reads( bamfile, regionstr=''):
@@ -55,8 +57,8 @@ class SimpleTest(unittest.TestCase):
 
     
 
-    def test_empty_get_depths(self):
-        expected_depths = np.array([3, 2, 1] + [0]*997)
+    def test_simple_get_depths(self):
+        expected_depths = np.array([3, 2, 1])
         result = self.matrix.get_depths(self.reads) 
         #print(result)
         assert_equal(expected_depths, result)
@@ -115,7 +117,7 @@ class SimpleTest(unittest.TestCase):
         expected_list = [  seqs[0], seqs[1], seqs[3], seqs[4], seqs[6], seqs[7] ]
         for seq in expected_list:
             seq.pick()
-        expected_depths = np.array([3, 4, 6, 4, 3, 2, 2, 1] + [0]*992)
+        expected_depths = np.array([3, 4, 6, 4, 3, 2, 2, 1])
         self.matrix.min_depth = 3
         self.matrix.minimize_depths()
         actual_matrix = self.matrix.seq_matrix
@@ -135,7 +137,9 @@ class SimpleTest(unittest.TestCase):
     @mock.patch('subsamplebam.sys.stdout', new_callable=StringIO)
     def test_main(self, mock_stdout, func):
         sub.main() 
-        expected = open('test40.sam', 'r').read().strip()
+
+        samfile = os.path.join(THISD, 'test40.sam')
+        expected = open(samfile, 'r').read().strip()
         result = mock_stdout.getvalue().strip()
         
         self.assertEquals(expected, result)

@@ -6,21 +6,24 @@ outdir=outputs
 tmpdir=/tmp/subsampletmp
 mkdir -p $tmpdir
 mkdir -p $outdir
-outfile=${bamfile//\//_}.minimized.$depth
+outfile=${bamfile//[\/\.]/_}.minimized.$depth
 ngs="/home/AMED/michael.panciera/projects/ngs_mapper/ngs_mapper" 
 compiled=$outdir/compiled.${outfile}.bam;  
 
 let i=0
 for ref  in $refs; 
-do 
+do  
     let i++;
     echo $1;
+    (
     out=${tmpdir}/${i}; #${outifile}
     python subsample_mindepth.py $bamfile $ref --subsample $depth $orphans > $out.sam;
     samtools view -hSb $out.sam  > $out.bam; #| samtools sort - $out; samtools index $out.bam;
+    ) &
     ref=${ref//[\/\|]/_}; 
     echo "$ref saved to $out.bam";
 done; 
+wait
 
 if [ $i -ge 2 ];
 then  
@@ -29,7 +32,6 @@ then
 else
     mv $tmpdir/$i.bam $compiled
 fi
-
 
 echo "bam files compiled in $outdir/compiled.${outfile}.bam.  Now compiling and plotting";
 samtools sort $compiled $compiled;
