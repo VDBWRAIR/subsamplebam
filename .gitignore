@@ -60,3 +60,5 @@ target/
 *.swp
 bin/
 cover/
+docs/_static/
+docs/_templates/
