@@ -150,7 +150,7 @@ class SimpleTest(unittest.TestCase):
 
         samfile = os.path.join(THISD, 'test40.sam')
         expected = open(samfile, 'r').read().strip()
-        result = mock_stdout.getvalue().strip().decode(encoding='UTF-8');
+        result = str(mock_stdout.getvalue().strip().decode('UTF-8'));
         self.assertEquals(expected, result)
 
 
