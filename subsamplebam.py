@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python # -*- coding: utf-8 -*-
 
 # Handle SIGPIPE signals correctly
 from signal import signal, SIGPIPE, SIG_DFL
@@ -15,21 +14,32 @@ import subprocess
 import shlex
 import os.path
 import multiprocessing
+import numpy as np
 
-from Bio import SeqIO
+''' Python3 compatibility ''' 
 
-def parse_args():
+from past.builtins import xrange
+
+def parse_args(wrapper=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
         'bamfile'
     )
 
-    parser.add_argument(
-        'regionstr',
-        default=None,
-        help='Region string to do subsampleing on ref with'
-    )
+    if not wrapper: 
+        parser.add_argument(
+            'refseq',
+            default=None,
+            help='name of the reference sequenceto do subsampleing on '
+        )
+        ''' reference lenght isn't necessary to use samtools view '''
+#        parser.add_argument(
+#            'reflength',
+#            default=None,
+#            type=int,
+#            help='Length of the reference sequence'
+#        )
 
     parser.add_argument(
         '--subsample',
@@ -37,6 +47,14 @@ def parse_args():
         default=1000,
         help='What depth to try and subsample to'
     )
+
+    parser.add_argument(
+            '-A', '--count-orphans',
+            action='store_true',
+            help='Allow orphan/unpaired reads.'
+            )
+            
+
 
     return parser.parse_args()
 
@@ -59,15 +77,6 @@ def randomly_select_reads_from_samview(bamfile, regionstr, n):
     except ValueError as e:
         raise MinimumDepthNotAvailable('Depth for {0} is only {1}'.format(regionstr, len(sview)))
     return newselection
-
-def reference_info(reffile):
-    '''
-    Hash reference id's with their lengths
-    '''
-    refinfo = {}
-    for rec in SeqIO.parse(reffile, 'fasta'):
-        refinfo[rec.id] = len(str(rec.seq))
-    return refinfo
 
 def parallel_randomly_select_reads_from_samview(args):
     try:
@@ -115,6 +124,12 @@ def make_subselected_bam(bamfile, uniquereads):
         sys.stdout.write(line)
     for line in uniquereads:
         sys.stdout.write(line)
+
+
+def reads_by_pos(reads, max_pos):
+       #def is_at_pos(pos): return read['pos'] == pos
+    for pos in xrange(max_pos):
+        yield [read for read in reads if read['pos'] == pos]
 
 def samview(bamfile, regionstr):
     '''

@@ -1,6 +1,12 @@
-[![Build Status](https://travis-ci.org/necrolyte2/subsamplebam.svg?branch=master)](https://travis-ci.org/necrolyte2/subsamplebam)
-[![Coverage Status](https://coveralls.io/repos/necrolyte2/subsamplebam/badge.png?branch=master)](https://coveralls.io/r/necrolyte2/subsamplebam?branch=master)
-[![Docs](https://readthedocs.org/projects/subsamplebam/badge/?version=latest)](http://subsamplebam.readthedocs.org/en/latest/)
+[![Build Status](https://travis-ci.org/averagehat/subsamplebam.svg?branch=master)](https://travis-ci.org/averagehat/subsamplebam) 
+[![Coverage Status](https://coveralls.io/repos/averagehat/subsamplebam/badge.svg?branch=master)](https://coveralls.io/r/averagehat/subsamplebam?branch=master)
+
+Current solution is in subsample_mindepth.py. Travis integration has been updated.
+
+
+# TODO 
+* Test with real data and confer with biologists to ensure accuracy
+* Refactor implementation to allow multi-processing solution (may involve a "mop-up" method to run after re-uniting the subsampled reads)
 
 # subsamplebam
 
@@ -86,6 +92,3 @@ You can see this in the examples above that even though ``--subsample 10`` was u
 they may cover many base positions. So if your average read depth is 150 and you are sub selecting at 10 depth, the first base will contain 10 depth, but position 2 will contain those 10 reads, plus potentially 10 more reads. Then the 3rd position will
 contain 10+10+10, and so on.
 
-## TODO
-
-* Fix the issue noted above

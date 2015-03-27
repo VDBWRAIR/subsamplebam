@@ -10,7 +10,7 @@ install:
 before_script:
     - tests/install_samtools.sh
     - export PATH=$PATH:$PWD/bin
-script:
-    - nosetests --with-coverage --cover-erase --cover-package=subsamplebam
+script: 
+    - nosetests  --with-coverage --cover-erase --cover-package=subsamplebam --cover-package=subsample_mindepth
 after_success:
     - coveralls

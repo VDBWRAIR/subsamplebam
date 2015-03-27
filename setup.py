@@ -5,7 +5,7 @@ __version__ = '0.0.1-dev'
 setup(
     name = 'subsamplebam',
     version = __version__,
-    py_modules = ['subsamplebam'],
+    py_modules = ['subsamplebam', 'subsample_mindepth'],
     setup_requires = [
         'nose',
         'python-coveralls'
