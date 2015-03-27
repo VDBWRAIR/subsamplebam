@@ -17,10 +17,8 @@ import multiprocessing
 import numpy as np
 
 ''' Python3 compatibility ''' 
-try: 
-    xrange 
-except NameError: 
-    xrange = range
+
+from past.builtins import xrange
 
 def parse_args(wrapper=False):
     parser = argparse.ArgumentParser()
