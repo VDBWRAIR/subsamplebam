@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/averagehat/subsamplebam.svg?branch=master)](https://travis-ci.org/averagehat/subsamplebam) 
+[![Coverage Status](https://coveralls.io/repos/averagehat/subsamplebam/badge.svg?branch=master)](https://coveralls.io/r/averagehat/subsamplebam?branch=master)
+
 Current solution is in subsample_mindepth.py. Travis integration has been updated.
 
 
