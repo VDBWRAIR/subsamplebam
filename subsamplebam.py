@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python # -*- coding: utf-8 -*-
 
 # Handle SIGPIPE signals correctly
 from signal import signal, SIGPIPE, SIG_DFL
@@ -17,6 +16,11 @@ import os.path
 import multiprocessing
 import numpy as np
 
+''' Python3 compatibility ''' 
+try: 
+    xrange 
+except NameError: 
+    xrange = range
 
 def parse_args(wrapper=False):
     parser = argparse.ArgumentParser()

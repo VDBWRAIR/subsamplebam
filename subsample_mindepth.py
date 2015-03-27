@@ -5,6 +5,12 @@ import subsamplebam
 import subprocess as sp
 import re
 
+''' Python3 compatibility '''
+try: 
+    xrange 
+except NameError: 
+    xrange = range
+
 class CommonEqualityMixin(object): 
         def __eq__(self, other):
             return (type(other) is type(self) and self.__dict__ == other.__dict__)
