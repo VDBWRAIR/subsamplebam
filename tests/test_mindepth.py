@@ -10,9 +10,14 @@ import numpy as np
 import subsample_mindepth as sub
 from subsample_mindepth import Alignment, DepthMatrix
 from numpy.ma.testutils import assert_equal
-from argparse import Namespace
-from StringIO import StringIO
+from argparse import Namespace 
+try:
+        from StringIO import StringIO
+except ImportError:
+        from io import StringIO
 import os.path
+
+
 THISD = os.path.dirname(os.path.abspath(__file__))
 
 def mock_args(wrapper=False): 
