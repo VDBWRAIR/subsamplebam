@@ -12,6 +12,5 @@ before_script:
     - export PATH=$PATH:$PWD/bin
 script: 
     - nosetests  --with-coverage --cover-erase --cover-package=subsamplebam --cover-package=subsample_mindepth
-
 after_success:
     - coveralls
