@@ -4,12 +4,11 @@ python:
   - "2.7"
   - "3.4"
 install:
+    - tests/install_samtools.sh
+    - export PATH=$PATH:$PWD/bin
     - pip install -r tests/requirements-dev.txt
     - pip install -r requirements.txt
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
-before_script:
-    - tests/install_samtools.sh
-    - export PATH=$PATH:$PWD/bin
 script: 
     - nosetests  --with-coverage --cover-erase --cover-package=subsamplebam --cover-package=subsample_mindepth
 after_success:
