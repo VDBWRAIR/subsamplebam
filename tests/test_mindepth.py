@@ -7,7 +7,7 @@ from compat import (
         )
 #sys.path.append('/Users/wovenhead/clones/ngs_mapper/ngs_mapper/')
 import numpy as np
-sys.path.append('..'); import subsample_mindepth as sub
+import subsample_mindepth as sub
 from subsample_mindepth import Alignment, DepthMatrix
 from numpy.ma.testutils import assert_equal
 from argparse import Namespace

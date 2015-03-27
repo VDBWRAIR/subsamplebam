@@ -132,15 +132,6 @@ class TestReferenceInfo(unittest.TestCase):
             )
         ]
 
-    @mock.patch('subsamplebam.SeqIO.parse')
-    def test_returns_dictionary_by_id_values_are_lengths(self, m_seqio_parse):
-        m_seqio_parse.return_value = self.mock_seqrecords
-        r = subsamplebam.reference_info('reference.fasta')
-        for rec in self.mock_seqrecords:
-            seqlen = len(rec.seq)
-            self.assertEqual(seqlen, r[rec.id])
-
-@mock.patch('subsamplebam.SeqIO.parse')
 @mock.patch('subsamplebam.multiprocessing.Pool')
 @mock.patch('subsamplebam.subprocess.Popen')
 class TestRandomlySelectsReads(unittest.TestCase):
@@ -158,7 +149,7 @@ class TestRandomlySelectsReads(unittest.TestCase):
             'read10  1  chr1    1   60  10M    =   1  1    TTTCGAATC    FFFFFFFFF    NM:i:3  AS:i:231    XS:i:0  RG:Z:MiSeq',
         )
 
-    def test_randomly_selects_correct_amount_of_items(self, mpopen, mpool, mparse):
+    def test_randomly_selects_correct_amount_of_items(self, mpopen, mpool):
         mpopen.return_value.poll.return_value = None
         mpopen.return_value.stdout.__iter__.return_value = self.samview_lines[1:]
         mpopen.return_value.stdout.readline.return_value = self.samview_lines[0]
@@ -171,7 +162,7 @@ class TestRandomlySelectsReads(unittest.TestCase):
 
             self.assertEqual(set(self.samview_lines), r)
 
-    def test_handles_missing_depth_error(self, mpopen, mpool, mparse):
+    def test_handles_missing_depth_error(self, mpopen, mpool):
         mpopen.return_value.poll.return_value = None
         mpopen.return_value.stdout.__iter__.return_value = self.samview_lines[1:]
         mpopen.return_value.stdout.readline.return_value = self.samview_lines[0]

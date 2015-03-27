@@ -18,8 +18,6 @@ import multiprocessing
 import numpy as np
 
 
-from Bio import SeqIO
-
 def parse_args(wrapper=False):
     parser = argparse.ArgumentParser()
 
@@ -77,15 +75,6 @@ def randomly_select_reads_from_samview(bamfile, regionstr, n):
     except ValueError as e:
         raise MinimumDepthNotAvailable('Depth for {0} is only {1}'.format(regionstr, len(sview)))
     return newselection
-
-def reference_info(reffile):
-    '''
-    Hash reference id's with their lengths
-    '''
-    refinfo = {}
-    for rec in SeqIO.parse(reffile, 'fasta'):
-        refinfo[rec.id] = len(str(rec.seq))
-    return refinfo
 
 def parallel_randomly_select_reads_from_samview(args):
     try:
