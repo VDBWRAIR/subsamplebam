@@ -6,10 +6,8 @@ import subprocess as sp
 import re
 
 ''' Python3 compatibility '''
-try: 
-    xrange 
-except NameError: 
-    xrange = range
+
+from past.builtins import map, xrange, filter
 
 class CommonEqualityMixin(object): 
         def __eq__(self, other):

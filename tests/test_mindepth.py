@@ -11,10 +11,15 @@ import subsample_mindepth as sub
 from subsample_mindepth import Alignment, DepthMatrix
 from numpy.ma.testutils import assert_equal
 from argparse import Namespace 
-try:
-        from StringIO import StringIO
-except ImportError:
-        from io import StringIO
+
+from past.builtins import map, xrange, filter
+#from six import StringIO
+#try:
+#        from StringIO import StringIO
+#except ImportError:
+#        from io import StringIO
+#
+from io import BytesIO
 import os.path
 
 
@@ -139,14 +144,13 @@ class SimpleTest(unittest.TestCase):
 
 
     @mock.patch("subsamplebam.parse_args", side_effect=mock_args)
-    @mock.patch('subsamplebam.sys.stdout', new_callable=StringIO)
+    @mock.patch('subsamplebam.sys.stdout', new_callable=BytesIO)
     def test_main(self, mock_stdout, func):
         sub.main() 
 
         samfile = os.path.join(THISD, 'test40.sam')
         expected = open(samfile, 'r').read().strip()
-        result = mock_stdout.getvalue().strip()
-        
+        result = mock_stdout.getvalue().strip().decode(encoding='UTF-8');
         self.assertEquals(expected, result)
 
 
