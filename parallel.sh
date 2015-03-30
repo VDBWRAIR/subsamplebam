@@ -9,7 +9,7 @@ mkdir -p $outdir
 outfile=${bamfile//[\/\.]/_}.minimized.$depth
 ngs="/home/AMED/michael.panciera/projects/ngs_mapper/ngs_mapper" 
 compiled=$outdir/compiled.${outfile}.bam;  
-
+MERGE=false
 let i=0
 for ref  in $refs; 
 do  
@@ -18,12 +18,23 @@ do
     (
     out=${tmpdir}/${i}; #${outifile}
     python subsample_mindepth.py $bamfile $ref --subsample $depth $orphans > $out.sam;
-    samtools view -hSb $out.sam  > $out.bam; #| samtools sort - $out; samtools index $out.bam;
-    ) &
+    samtools view -hSb $out.sam  > $out.bam; #| samtools sort - $out; samtools index $out.bam; 
     ref=${ref//[\/\|]/_}; 
+    if [ ! "$MERGE" = true ]
+    then
+        singleout=$outdir/${ref}.minimized.$depth.bam
+        mv $out.bam $singleout
+        samtools sort $singleout $singleout;
+        samtools index  $singleout; 
+        python $ngs/bam_to_qualdepth.py $singleout > $singleout.json
+        python  $ngs/graph_qualdepth.py $singleout.json -o $singleout.png 
+    fi 
+    ) & 
     echo "$ref saved to $out.bam";
 done; 
 wait
+
+if [ ! "$MERGE" = true ]; then exit; fi
 
 if [ $i -ge 2 ];
 then  
