@@ -25,9 +25,20 @@ import os.path
 
 THISD = os.path.dirname(os.path.abspath(__file__))
 
+''' Instead of a random alignment, return the smallest alignment to make testing simpler '''
+def not_random_subsample(collection):
+    return min(collection, key=lambda seq: seq.seq_length)
+
 def mock_args(wrapper=False): 
         bamfile = os.path.join(THISD, 'ecoli.bam')
-        return Namespace(reflength=1000, subsample=40, count_orphans=True, bamfile=bamfile, refseq="gi|110640213|ref|NC_008253.1|")
+        return Namespace(reflength=1000, subsample=40, count_orphans=True, bamfile=bamfile, refseq="gi|110640213|ref|NC_008253.1|", more_random=False)
+
+
+def more_random_mock_args(wrapper=False): 
+        bamfile = os.path.join(THISD, 'simplein.bam')
+        # empty refseq hack to get around malformed .bam file
+        return Namespace(reflength=1000, subsample=3, count_orphans=True, bamfile=bamfile, refseq="", more_random=True)
+
 
 
 def mock_get_raw_reads( bamfile, regionstr=''):
@@ -116,7 +127,7 @@ class SimpleTest(unittest.TestCase):
     def test_pickreads(self):
         pass
 
-    def test_minimize_depths_ecoli(self):
+    def test_minimize_depths_complex(self):
         self.complexSetUp()
         seqs = map(sub.parse_alignment, self.raw_reads) 
         expected_matrix =  [
@@ -143,16 +154,61 @@ class SimpleTest(unittest.TestCase):
 
 
 
-    @mock.patch("subsamplebam.parse_args", side_effect=mock_args)
-    @mock.patch('subsamplebam.sys.stdout', new_callable=BytesIO)
-    def test_main(self, mock_stdout, func):
-        sub.main() 
-
-        samfile = os.path.join(THISD, 'test40.sam')
+    def check_files(self, mock_stdout, expected_file):
+        samfile = os.path.join(THISD, expected_file)
         expected = open(samfile, 'r').read().strip()
         result = str(mock_stdout.getvalue().strip().decode('UTF-8'));
-        self.assertEquals(expected, result)
+        if expected_file == 'simplein.sam':
+            with open('tests/result.sam', 'w') as out: out.write(result)
+        return expected, result
 
+
+    @mock.patch('subsample_mindepth.random.choice', side_effect=not_random_subsample)
+    @mock.patch("subsamplebam.parse_args", side_effect=mock_args)
+    @mock.patch('subsamplebam.sys.stdout', new_callable=BytesIO)
+    def test_main(self, mock_stdout, func, func2):
+        sub.main() 
+        self.assertEquals(*self.check_files(mock_stdout, 'test40.sam'))
+
+
+
+    ''' The order of these mocks is the order they appear as arguments to the test method. '''
+#    @mock.patch('subsample_mindepth.random.sample', side_effect=not_random_subsample)
+#    @mock.patch("subsamplebam.parse_args", side_effect=more_random_mock_args)
+#    @mock.patch('subsamplebam.sys.stdout', new_callable=BytesIO)
+#    def test_main_more_random(self, mock_stdout, func, func2):
+#        #Expected will equal the input file becasue all reads are subsampled in this case
+#        sub.main()
+#        self.maxDiff = None
+#        expected, result = self.check_files(mock_stdout, 'simplein.sam')
+#        self.assertEquals(expected, result)
+
+
+    @mock.patch('subsample_mindepth.random.choice', side_effect=not_random_subsample)
+    def test_minimize_depths_complex_more_random(self, func):
+        #TODO: Refactor this so as not to duplicate code with non-random ecoli test
+        self.complexSetUp()
+        seqs = map(sub.parse_alignment, self.raw_reads) 
+        expected_matrix =  [
+                [seqs[0],  seqs[1],  seqs[2], seqs[3]],
+                [seqs[4], seqs[5]],
+                [seqs[6], seqs[7]]
+                ]
+        expected_list = seqs
+        for seq in expected_list:
+            seq.pick()
+        expected_depths = np.array([4, 6, 7, 4, 3, 2, 2, 1])
+        self.matrix.min_depth = 3
+        self.matrix.more_random = True
+        self.matrix.minimize_depths()
+        actual_matrix = self.matrix.seq_matrix
+        for row in actual_matrix:
+            for seq in row:
+                if not seq.picked:
+                    row.remove(seq) 
+        self.assertEquals(expected_matrix, actual_matrix)
+        assert_equal(expected_depths, self.matrix.depth_array)
+        self.assertEquals([seq.string for seq in expected_list], sub.flatten_and_filter_matrix(self.matrix.seq_matrix)) 
 
 
 
