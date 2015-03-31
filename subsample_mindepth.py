@@ -4,6 +4,7 @@ import numpy as np
 import subsamplebam
 import subprocess as sp
 import re
+import random
 
 ''' Python3 compatibility '''
 
@@ -48,11 +49,12 @@ class DepthMatrix(CommonEqualityMixin):
     Keep track of the picked alignments (seq_matrix) and .depth_array, representing the coverage at each sequence position.
     '''
 
-    def __init__(self, min_depth, allow_orphans=False):
+    def __init__(self, min_depth, allow_orphans=False, more_random=False):
         self.seq_matrix = [[]]
         #self.depth_array = np.zeros(ref_length)
         self.min_depth = min_depth 
         self.allow_orphans = allow_orphans
+        self.more_random = more_random
 
 
     def allow(self, seq):
@@ -85,11 +87,16 @@ class DepthMatrix(CommonEqualityMixin):
         matches = 0
         while matches < num_needed and candidate_sequences: 
             # could instead keep sequences in order sorted by overlap 
-            farthest_overlap_seq = max(candidate_sequences, key=lambda seq: seq.overlap)
-            candidate_sequences.remove(farthest_overlap_seq)
-            farthest_overlap_seq.pick()
+            if self.more_random: 
+                #import ipdb; ipdb.set_trace()
+                next_seq = random.choice(candidate_sequences)
+            else: 
+                next_seq = max(candidate_sequences, key=lambda seq: seq.overlap)
+            candidate_sequences.remove(next_seq)
+            next_seq.pick()
             matches += 1
-            yield farthest_overlap_seq
+            yield next_seq
+
     def pickreads(self, pos, needed_depth):
         ''' 
         1. get all sequences which could overlap under_index, and which have not already been selected. (how get these, by using samtools view again? or store in memory? only need a UNIQUE identifier and the sequence length)
@@ -194,8 +201,9 @@ def main():
     sys.stderr.write(str(args)+'\n') 
 #    ref_length = int(args.regionstr.split(':')[-1].split('-')[-1])
 #    region_str = args.regionstr.split(':')[0]
-    matrix = DepthMatrix(args.subsample, allow_orphans=args.count_orphans) 
+    matrix = DepthMatrix(args.subsample, allow_orphans=args.count_orphans, more_random=args.more_random)
     matrix.make_seq_matrix(args.bamfile, args.refseq)
+    #if args.more_random:  import ipdb; ipdb.set_trace()
     matrix.minimize_depths()
     ''' Flatten the matrix '''
     sampled_seqs = flatten_and_filter_matrix(matrix.seq_matrix)

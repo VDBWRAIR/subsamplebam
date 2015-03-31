@@ -53,8 +53,13 @@ def parse_args(wrapper=False):
             action='store_true',
             help='Allow orphan/unpaired reads.'
             )
-            
 
+    parser.add_argument(
+            '-r', '--more-random',
+            action='store_true',
+            help='Subsample with more random read-picking at expense of minimizing depth.',
+            default=False
+            ) 
 
     return parser.parse_args()
 
