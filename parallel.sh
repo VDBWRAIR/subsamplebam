@@ -9,7 +9,7 @@ mkdir -p $outdir
 outfile=${bamfile//[\/\.]/_}.minimized.$depth
 ngs="/home/AMED/michael.panciera/projects/ngs_mapper/ngs_mapper" 
 compiled=$outdir/compiled.${outfile}.bam;  
-MERGE=false
+MERGE=true
 let i=0
 for ref  in $refs; 
 do  

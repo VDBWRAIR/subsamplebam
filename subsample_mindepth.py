@@ -6,8 +6,7 @@ import subprocess as sp
 import re
 import random
 
-''' Python3 compatibility '''
-
+''' Python3 compatibility ''' 
 from past.builtins import map, xrange, filter
 
 class CommonEqualityMixin(object): 
@@ -88,7 +87,6 @@ class DepthMatrix(CommonEqualityMixin):
         while matches < num_needed and candidate_sequences: 
             # could instead keep sequences in order sorted by overlap 
             if self.more_random: 
-                #import ipdb; ipdb.set_trace()
                 next_seq = random.choice(candidate_sequences)
             else: 
                 next_seq = max(candidate_sequences, key=lambda seq: seq.overlap)
@@ -124,7 +122,6 @@ class DepthMatrix(CommonEqualityMixin):
        '''
        #TODO:Needlessly creates a depth_array of equal size to self.depth_array. Also needlessly slow.
        depths = np.zeros(len(self.depth_array))
-       #import ipdb; ipdb.set_trace()
        for seq in reads: 
            ''' Even if a sequence would overlap past the length of depth-array, we don't include that in depth-array. 
            the numpy arrays must be the same size in order to add them.  '''
@@ -138,7 +135,6 @@ class DepthMatrix(CommonEqualityMixin):
         :param str regionstr: reference sequence and length as listed in .bam header i.e.  <refname>:1-1000
         Parse a bam file using sam tools, and store the alignments as a 2d matrix, where each row is a posiiton in the reference sequence.  
         '''
-        #import ipdb; ipdb.set_trace()
         all_alignments = get_alignments(bamfile, regionstr)
         max_pos = max([seq.pos for seq in all_alignments])
         max_overlap = max([seq.overlap for seq in all_alignments])
@@ -152,7 +148,6 @@ class DepthMatrix(CommonEqualityMixin):
         Trim self.seq_matrix to minimize coverage overflow.
         For each position in the reference sequence, pick reads until the minimum depth is met if possible.
         '''
-        #import ipdb; ipdb.set_trace()
         for pos, depth in enumerate(self.depth_array):
             if depth < self.min_depth:
                 needed_depth = self.min_depth - depth
@@ -203,7 +198,6 @@ def main():
 #    region_str = args.regionstr.split(':')[0]
     matrix = DepthMatrix(args.subsample, allow_orphans=args.count_orphans, more_random=args.more_random)
     matrix.make_seq_matrix(args.bamfile, args.refseq)
-    #if args.more_random:  import ipdb; ipdb.set_trace()
     matrix.minimize_depths()
     ''' Flatten the matrix '''
     sampled_seqs = flatten_and_filter_matrix(matrix.seq_matrix)
